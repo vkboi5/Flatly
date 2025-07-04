@@ -1,0 +1,260 @@
+[{
+  "_id": {
+    "$oid": "68681c7f2a77d9c45af70c69"
+  },
+  "email": "alex@gmail.com",
+  "password": "$2a$10$twi0aI1jUK7gwlRHcsWSY.qhI98fbNJ52iaJYlwltIOK/Q9CShwL.",
+  "name": "Alex Chen",
+  "age": 24,
+  "city": "Nagpur",
+  "profilePicture": "/uploads/profiles/profilePicture-1751653577011-142981409.jpg",
+  "instagramHandle": "alex_chen24",
+  "userType": "find-room",
+  "selfVector": [
+    0.8,
+    0.6,
+    0.9,
+    0.7,
+    0.3,
+    0.5,
+    0.8,
+    0.6,
+    0.4,
+    0.7
+  ],
+  "desiredVector": [
+    0.9,
+    0.7,
+    0.8,
+    0.4,
+    0.6,
+    0.8,
+    0.5,
+    0.7,
+    0.5,
+    0.6
+  ],
+  "isProfileComplete": true,
+  "likedUsers": [],
+  "dislikedUsers": [],
+  "lastActive": {
+    "$date": "2025-07-04T18:46:59.820Z"
+  },
+  "matches": [],
+  "createdAt": {
+    "$date": "2025-07-04T18:25:03.456Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-04T18:46:59.821Z"
+  },
+  "__v": 0,
+  "bio": "Clean, organized software engineer. Love cooking and quiet evenings. Looking for a peaceful home environment."
+},
+{
+  "_id": {
+    "$oid": "686820922a77d9c45af70cf5"
+  },
+  "email": "jamie@gmail.com",
+  "password": "$2a$10$dLCTGK7BHV1.AeJlukpQdO0jAn3ceW.ApkC0Iiqa5IQR9h9v744Pa",
+  "name": "Jamie Rodriguez",
+  "age": 22,
+  "city": "Nagpur",
+  "profilePicture": "/uploads/profiles/profilePicture-1751654591499-801352396.jpg",
+  "instagramHandle": "jamie_r22",
+  "userType": "find-roommate",
+  "selfVector": [
+    0.9,
+    0.5,
+    0.8,
+    0.8,
+    0.2,
+    0.4,
+    0.9,
+    0.7,
+    0.3,
+    0.6
+  ],
+  "desiredVector": [
+    0.8,
+    0.6,
+    0.7,
+    0.3,
+    0.7,
+    0.5,
+    0.8,
+    0.6,
+    0.4,
+    0.7
+  ],
+  "isProfileComplete": true,
+  "likedUsers": [],
+  "dislikedUsers": [],
+  "lastActive": {
+    "$date": "2025-07-04T18:42:26.360Z"
+  },
+  "matches": [],
+  "createdAt": {
+    "$date": "2025-07-04T18:42:26.361Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-04T18:43:11.514Z"
+  },
+  "__v": 0,
+  "bio": "Graduate student with a spare room. Very clean, respectful, and looking for a responsible roommate."
+},
+{
+  "_id": {
+    "$oid": "68682415f6fe2dd2aeb50532"
+  },
+  "email": "sam@gmail.com",
+  "password": "$2a$10$n.2fPzP35Oboex59FFuxOOR4BLxL8XNrym7n/HJ9AcPMOGNRlGnbi",
+  "name": "Sam Parker",
+  "age": 26,
+  "city": "Nagpur",
+  "profilePicture": "/uploads/profiles/profilePicture-1751655503641-468960778.jpg",
+  "instagramHandle": "sam_parker26",
+  "userType": "find-room",
+  "selfVector": [
+    0.5,
+    0.8,
+    0.6,
+    0.9,
+    0.7,
+    0.8,
+    0.6,
+    0.5,
+    0.7,
+    0.9
+  ],
+  "desiredVector": [
+    0.4,
+    0.9,
+    0.5,
+    0.8,
+    0.6,
+    0.7,
+    0.3,
+    0.8,
+    0.6,
+    0.9
+  ],
+  "isProfileComplete": true,
+  "likedUsers": [],
+  "dislikedUsers": [],
+  "lastActive": {
+    "$date": "2025-07-04T18:57:25.094Z"
+  },
+  "matches": [],
+  "createdAt": {
+    "$date": "2025-07-04T18:57:25.099Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-04T18:58:23.669Z"
+  },
+  "__v": 0,
+  "bio": "Marketing professional who loves socializing and weekend adventures. Looking for a fun living situation!"
+},
+{
+  "_id": {
+    "$oid": "68682500f6fe2dd2aeb50533"
+  },
+  "email": "taylor@gmail.com",
+  "password": "$2a$10$n.2fPzP35Oboex59FFuxOOR4BLxL8XNrym7n/HJ9AcPMOGNRlGnbi",
+  "name": "Taylor Kim",
+  "age": 23,
+  "city": "Nagpur",
+  "profilePicture": "/uploads/profiles/profilePicture-1751655600000-468960778.jpg",
+  "instagramHandle": "taylor_k23",
+  "userType": "find-roommate",
+  "selfVector": [
+    0.6,
+    0.7,
+    0.5,
+    0.8,
+    0.6,
+    0.7,
+    0.5,
+    0.6,
+    0.8,
+    0.8
+  ],
+  "desiredVector": [
+    0.5,
+    0.8,
+    0.6,
+    0.9,
+    0.7,
+    0.8,
+    0.4,
+    0.7,
+    0.7,
+    0.9
+  ],
+  "isProfileComplete": true,
+  "likedUsers": [],
+  "dislikedUsers": [],
+  "lastActive": {
+    "$date": "2025-07-04T19:00:00.000Z"
+  },
+  "matches": [],
+  "createdAt": {
+    "$date": "2025-07-04T19:00:00.001Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-04T19:00:30.000Z"
+  },
+  "__v": 0,
+  "bio": "Art student with an extra room. Love creative spaces and good conversations. Pet-friendly!"
+},
+{
+  "_id": {
+    "$oid": "68682600f6fe2dd2aeb50534"
+  },
+  "email": "morgan@gmail.com",
+  "password": "$2a$10$n.2fPzP35Oboex59FFuxOOR4BLxL8XNrym7n/HJ9AcPMOGNRlGnbi",
+  "name": "Morgan Davis",
+  "age": 25,
+  "city": "Nagpur",
+  "profilePicture": "/uploads/profiles/profilePicture-1751655700000-468960778.jpg",
+  "instagramHandle": "morgan_d25",
+  "userType": "find-room",
+  "selfVector": [
+    0.7,
+    0.4,
+    0.7,
+    0.6,
+    0.8,
+    0.6,
+    0.7,
+    0.8,
+    0.5,
+    0.4
+  ],
+  "desiredVector": [
+    0.6,
+    0.5,
+    0.8,
+    0.7,
+    0.9,
+    0.5,
+    0.6,
+    0.7,
+    0.6,
+    0.4
+  ],
+  "isProfileComplete": true,
+  "likedUsers": [],
+  "dislikedUsers": [],
+  "lastActive": {
+    "$date": "2025-07-04T19:05:00.000Z"
+  },
+  "matches": [],
+  "createdAt": {
+    "$date": "2025-07-04T19:05:00.001Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-04T19:05:30.000Z"
+  },
+  "__v": 0,
+  "bio": "Night owl freelancer who loves music and hosting friends. Looking for a lively household!"
+}]
