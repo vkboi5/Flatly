@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { MessageCircle, User, Settings, LogOut, Home, Heart, Menu, X } from 'lucide-react';
+import { MessageCircle, User, Settings, LogOut, Home, Heart, Menu, X, Plus } from 'lucide-react';
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -59,6 +59,21 @@ const Navbar = () => {
                                 </button>
                             );
                         })}
+                        
+                        {/* Add Listing Button - Only for users looking for roommates */}
+                        {user?.userType === 'find-roommate' && (
+                            <button
+                                onClick={() => navigate('/add-listing')}
+                                className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                                    isActive('/add-listing')
+                                        ? 'text-blue-600 bg-blue-50'
+                                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                                }`}
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Add Listing</span>
+                            </button>
+                        )}
                     </div>
 
                     {/* Desktop User Menu */}
@@ -94,6 +109,18 @@ const Navbar = () => {
                                         <User className="w-4 h-4" />
                                         <span>Your Profile</span>
                                     </button>
+                                    {user?.userType === 'find-roommate' && (
+                                        <button
+                                            onClick={() => {
+                                                navigate('/add-listing');
+                                                setIsUserMenuOpen(false);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            <span>Add Listing</span>
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => {
                                             navigate('/settings');
@@ -150,6 +177,24 @@ const Navbar = () => {
                                     </button>
                                 );
                             })}
+                            
+                            {/* Add Listing Button for Mobile - Only for users looking for roommates */}
+                            {user?.userType === 'find-roommate' && (
+                                <button
+                                    onClick={() => {
+                                        navigate('/add-listing');
+                                        setIsMenuOpen(false);
+                                    }}
+                                    className={`w-full flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-md text-left transition-colors ${
+                                        isActive('/add-listing')
+                                            ? 'bg-blue-50 text-blue-600'
+                                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <Plus className="w-5 h-5" />
+                                    <span>Add Listing</span>
+                                </button>
+                            )}
                         </div>
                         
                         <div className="border-t border-gray-200 px-2 py-3">
@@ -175,6 +220,19 @@ const Navbar = () => {
                                 <User className="w-5 h-5" />
                                 <span>Your Profile</span>
                             </button>
+                            
+                            {user?.userType === 'find-roommate' && (
+                                <button
+                                    onClick={() => {
+                                        navigate('/add-listing');
+                                        setIsMenuOpen(false);
+                                    }}
+                                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                    <span>Add Listing</span>
+                                </button>
+                            )}
                             
                             <button
                                 onClick={() => {

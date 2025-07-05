@@ -53,7 +53,7 @@ router.post('/register', async (req, res) => {
             name: name.trim(),
             age: parseInt(age),
             city: city.trim(),
-            gender
+            gender: gender // Ensure gender is provided for new users
         });
         
         await user.save();
@@ -70,6 +70,7 @@ router.post('/register', async (req, res) => {
                 name: user.name,
                 age: user.age,
                 city: user.city,
+                gender: user.gender,
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete
             }
@@ -121,6 +122,7 @@ router.post('/login', async (req, res) => {
                 name: user.name,
                 age: user.age,
                 city: user.city,
+                gender: user.gender,
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete,
                 profilePicture: user.profilePicture,
@@ -149,6 +151,7 @@ router.get('/me', authenticate, async (req, res) => {
                 name: user.name,
                 age: user.age,
                 city: user.city,
+                gender: user.gender,
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete,
                 profilePicture: user.profilePicture,

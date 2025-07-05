@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import profileRoutes from './routes/profile.js';
 import matchingRoutes from './routes/matching.js';
+import listingRoutes from './routes/listings.js';
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +29,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/matching', matchingRoutes);
+app.use('/api/listings', listingRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

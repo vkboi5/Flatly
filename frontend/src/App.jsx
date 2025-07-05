@@ -17,6 +17,7 @@ import SwipeFeed from './pages/SwipeFeed';
 import Matches from './pages/Matches';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import AddListing from './pages/AddListing';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -38,6 +39,25 @@ const PublicRoute = ({ children }) => {
     }
     
     return !isAuthenticated ? children : <Navigate to="/app" />;
+};
+
+// Route for users who are looking for roommates (find-roommate)
+const RoommateRoute = ({ children }) => {
+    const { isAuthenticated, loading, user } = useAuth();
+    
+    if (loading) {
+        return <LoadingScreen />;
+    }
+    
+    if (!isAuthenticated) {
+        return <Navigate to="/login" />;
+    }
+    
+    if (user?.userType !== 'find-roommate') {
+        return <Navigate to="/app" />;
+    }
+    
+    return children;
 };
 
 // App Content component - this will be wrapped by AuthProvider
@@ -125,6 +145,15 @@ const AppContent = () => {
                             <Settings />
                         </>
                     </ProtectedRoute>
+                } />
+                
+                <Route path="/add-listing" element={
+                    <RoommateRoute>
+                        <>
+                            <Navbar />
+                            <AddListing />
+                        </>
+                    </RoommateRoute>
                 } />
                 
                 {/* Default redirects */}
