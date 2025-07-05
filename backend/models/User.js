@@ -33,6 +33,18 @@ const userSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    phoneNumber: {
+        type: String,
+        required: true,
+        trim: true,
+        validate: {
+            validator: function(v) {
+                // Allow various phone number formats
+                return /^[\+]?[1-9][\d]{0,15}$/.test(v.replace(/[\s\-\(\)]/g, ''));
+            },
+            message: 'Please enter a valid phone number'
+        }
+    },
     profilePicture: {
         type: String,
         default: null

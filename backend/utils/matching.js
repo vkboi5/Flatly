@@ -158,8 +158,8 @@ export const calculateMatchScore = (userA, userB) => {
     }
 };
 
-// Enhanced potential matches with better error handling
-export const getPotentialMatches = async (user, User, limit = 50) => {
+// Enhanced potential matches with better error handling and replacement priority
+export const getPotentialMatches = async (user, User, limit = 50, Listing = null) => {
     try {
         console.log('Getting potential matches for user:', user._id);
         
@@ -202,16 +202,33 @@ export const getPotentialMatches = async (user, User, limit = 50) => {
             return [];
         }
         
-        // Calculate match scores with enhanced error handling
+        // Calculate match scores with enhanced error handling and replacement priority
         const matchesWithScores = [];
         
         for (const match of filteredMatches) {
             try {
                 const matchScore = calculateMatchScore(user, match);
+                let hasReplacementListing = false;
+                
+                // Check if user has active replacement listings (only for find-roommate users)
+                if (match.userType === 'find-roommate' && Listing) {
+                    const replacementListing = await Listing.findOne({
+                        owner: match._id,
+                        isReplacementListing: true,
+                        replacementStatus: 'active',
+                        status: 'active'
+                    });
+                    hasReplacementListing = !!replacementListing;
+                }
+                
+                // Boost match score for replacement listings
+                const boostedScore = hasReplacementListing ? Math.min(1, matchScore * 1.5) : matchScore;
+                
                 matchesWithScores.push({
                     ...match,
-                    matchScore: matchScore,
-                    hasProfilePicture: !!match.profilePictureData
+                    matchScore: boostedScore,
+                    hasProfilePicture: !!match.profilePictureData,
+                    hasReplacementListing
                 });
             } catch (error) {
                 console.error(`Error calculating score for match ${match._id}:`, error);
@@ -219,15 +236,22 @@ export const getPotentialMatches = async (user, User, limit = 50) => {
                 matchesWithScores.push({
                     ...match,
                     matchScore: 0.05,
-                    hasProfilePicture: !!match.profilePictureData
+                    hasProfilePicture: !!match.profilePictureData,
+                    hasReplacementListing: false
                 });
             }
         }
         
-        // Sort by match score and return top matches
+        // Sort by replacement priority first, then by match score
         const sortedMatches = matchesWithScores
             .filter(match => match.matchScore > 0.01) // Very low threshold
-            .sort((a, b) => b.matchScore - a.matchScore)
+            .sort((a, b) => {
+                // First priority: replacement listings
+                if (a.hasReplacementListing && !b.hasReplacementListing) return -1;
+                if (!a.hasReplacementListing && b.hasReplacementListing) return 1;
+                // Second priority: match score
+                return b.matchScore - a.matchScore;
+            })
             .slice(0, limit);
         
         console.log(`Returning ${sortedMatches.length} matches with scores`);

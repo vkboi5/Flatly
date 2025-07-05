@@ -8,6 +8,10 @@ import authRoutes from './routes/auth.js';
 import profileRoutes from './routes/profile.js';
 import matchingRoutes from './routes/matching.js';
 import listingRoutes from './routes/listings.js';
+import replacementRoutes from './routes/replacementRoutes.js';
+
+// Import replacement monitoring
+import { initializeReplacementMonitoring } from './utils/replacementMonitor.js';
 
 // Load environment variables
 dotenv.config();
@@ -30,6 +34,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/matching', matchingRoutes);
 app.use('/api/listings', listingRoutes);
+app.use('/api/replacement', replacementRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -51,6 +56,10 @@ app.use('*', (req, res) => {
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/flatly')
     .then(() => {
         console.log('Connected to MongoDB');
+        
+        // Initialize replacement monitoring
+        initializeReplacementMonitoring();
+        
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });

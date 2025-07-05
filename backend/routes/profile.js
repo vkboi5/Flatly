@@ -19,14 +19,33 @@ const upload = multer({
         fileSize: 5 * 1024 * 1024 // 5MB limit
     },
     fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
+        console.log('Profile fileFilter - File details:', {
+            originalname: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size
+        });
         
-        if (mimetype && extname) {
+        // Check MIME type
+        const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        const mimeTypeValid = allowedMimeTypes.includes(file.mimetype);
+        
+        // Check file extension
+        const allowedExtensions = /\.(jpg|jpeg|png|gif|webp)$/i;
+        const extensionValid = allowedExtensions.test(file.originalname);
+        
+        console.log('Profile fileFilter - Validation:', {
+            mimeType: file.mimetype,
+            mimeTypeValid,
+            extensionValid,
+            filename: file.originalname
+        });
+        
+        if (mimeTypeValid && extensionValid) {
+            console.log('Profile fileFilter - File accepted');
             return cb(null, true);
         } else {
-            cb(new Error('Only image files are allowed'));
+            console.log('Profile fileFilter - File rejected');
+            return cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP)'));
         }
     }
 });
@@ -34,7 +53,7 @@ const upload = multer({
 // Update basic profile information
 router.put('/update', authenticate, async (req, res) => {
     try {
-        const { name, age, city, instagramHandle, bio, userType, gender } = req.body;
+        const { name, age, city, phoneNumber, instagramHandle, bio, userType, gender } = req.body;
         const updates = {};
         
         if (name) updates.name = name.trim();
@@ -45,6 +64,24 @@ router.put('/update', authenticate, async (req, res) => {
             updates.age = parseInt(age);
         }
         if (city) updates.city = city.trim();
+        if (phoneNumber) {
+            // Validate phone number format
+            const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
+            if (!/^[\+]?[1-9][\d]{0,15}$/.test(cleanPhone)) {
+                return res.status(400).json({ message: 'Please provide a valid phone number' });
+            }
+            
+            // Check if phone number already exists (exclude current user)
+            const existingPhone = await User.findOne({ 
+                phoneNumber: cleanPhone,
+                _id: { $ne: req.user._id }
+            });
+            if (existingPhone) {
+                return res.status(400).json({ message: 'Phone number is already registered' });
+            }
+            
+            updates.phoneNumber = cleanPhone;
+        }
         if (instagramHandle !== undefined) updates.instagramHandle = instagramHandle.trim() || null;
         if (bio !== undefined) updates.bio = bio.trim() || null;
         if (userType) {
@@ -74,6 +111,7 @@ router.put('/update', authenticate, async (req, res) => {
                 name: user.name,
                 age: user.age,
                 city: user.city,
+                phoneNumber: user.phoneNumber,
                 gender: user.gender,
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete,
@@ -89,39 +127,55 @@ router.put('/update', authenticate, async (req, res) => {
 });
 
 // Upload profile picture
-router.post('/upload-picture', authenticate, upload.single('profilePicture'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
+router.post('/upload-picture', authenticate, (req, res) => {
+    upload.single('profilePicture')(req, res, async (err) => {
+        if (err) {
+            console.error('Profile picture upload error:', err);
+            return res.status(400).json({ 
+                message: err.message || 'Error uploading profile picture',
+                error: err.message 
+            });
         }
         
-        // Store image data in MongoDB
-        const profilePictureData = {
-            data: req.file.buffer,
-            contentType: req.file.mimetype
-        };
-        
-        const user = await User.findByIdAndUpdate(
-            req.user._id,
-            { 
-                profilePictureData: profilePictureData,
-                profilePicture: null // Clear the old file path
-            },
-            { new: true }
-        ).select('-password');
-        
-        res.json({
-            message: 'Profile picture uploaded successfully',
-            user: {
-                id: user._id,
-                profilePicture: null,
-                hasProfilePicture: !!user.profilePictureData
+        try {
+            if (!req.file) {
+                return res.status(400).json({ message: 'No file uploaded' });
             }
-        });
-    } catch (error) {
-        console.error('Profile picture upload error:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
+            
+            console.log('Profile picture uploaded successfully:', {
+                originalname: req.file.originalname,
+                mimetype: req.file.mimetype,
+                size: req.file.size
+            });
+            
+            // Store image data in MongoDB
+            const profilePictureData = {
+                data: req.file.buffer,
+                contentType: req.file.mimetype
+            };
+            
+            const user = await User.findByIdAndUpdate(
+                req.user._id,
+                { 
+                    profilePictureData: profilePictureData,
+                    profilePicture: null // Clear the old file path
+                },
+                { new: true }
+            ).select('-password');
+            
+            res.json({
+                message: 'Profile picture uploaded successfully',
+                user: {
+                    id: user._id,
+                    profilePicture: null,
+                    hasProfilePicture: !!user.profilePictureData
+                }
+            });
+        } catch (error) {
+            console.error('Profile picture processing error:', error);
+            res.status(500).json({ message: 'Server error while processing profile picture' });
+        }
+    });
 });
 
 // Submit self questionnaire
@@ -208,6 +262,7 @@ router.get('/me', authenticate, async (req, res) => {
                 name: user.name,
                 age: user.age,
                 city: user.city,
+                phoneNumber: user.phoneNumber,
                 gender: user.gender,
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete,

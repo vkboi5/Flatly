@@ -8,18 +8,18 @@ const router = express.Router();
 // Register new user
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, name, age, city, gender } = req.body;
+        const { email, password, name, age, city, gender, phoneNumber } = req.body;
         
         console.log('Registration request body:', req.body);
         
         // Validation
-        if (!email || !password || !name || !age || !city || !gender) {
-            console.log('Missing fields:', { email: !!email, password: !!password, name: !!name, age: !!age, city: !!city, gender: !!gender });
+        if (!email || !password || !name || !age || !city || !gender || !phoneNumber) {
+            console.log('Missing fields:', { email: !!email, password: !!password, name: !!name, age: !!age, city: !!city, gender: !!gender, phoneNumber: !!phoneNumber });
             return res.status(400).json({ message: 'All fields are required' });
         }
         
         // Check for empty strings
-        if (email.trim() === '' || password.trim() === '' || name.trim() === '' || city.trim() === '') {
+        if (email.trim() === '' || password.trim() === '' || name.trim() === '' || city.trim() === '' || phoneNumber.trim() === '') {
             return res.status(400).json({ message: 'All fields are required' });
         }
         
@@ -40,10 +40,22 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'Invalid gender' });
         }
         
+        // Validate phone number format
+        const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
+        if (!/^[\+]?[1-9][\d]{0,15}$/.test(cleanPhone)) {
+            return res.status(400).json({ message: 'Please provide a valid phone number' });
+        }
+        
         // Check if user already exists
         const existingUser = await User.findOne({ email: email.toLowerCase() });
         if (existingUser) {
             return res.status(400).json({ message: 'User already exists with this email' });
+        }
+        
+        // Check if phone number already exists
+        const existingPhone = await User.findOne({ phoneNumber: cleanPhone });
+        if (existingPhone) {
+            return res.status(400).json({ message: 'Phone number is already registered' });
         }
         
         // Create new user
@@ -53,6 +65,7 @@ router.post('/register', async (req, res) => {
             name: name.trim(),
             age: parseInt(age),
             city: city.trim(),
+            phoneNumber: cleanPhone,
             gender: gender // Ensure gender is provided for new users
         });
         
@@ -70,6 +83,7 @@ router.post('/register', async (req, res) => {
                 name: user.name,
                 age: user.age,
                 city: user.city,
+                phoneNumber: user.phoneNumber,
                 gender: user.gender,
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete
@@ -122,6 +136,7 @@ router.post('/login', async (req, res) => {
                 name: user.name,
                 age: user.age,
                 city: user.city,
+                phoneNumber: user.phoneNumber,
                 gender: user.gender,
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete,
@@ -151,6 +166,7 @@ router.get('/me', authenticate, async (req, res) => {
                 name: user.name,
                 age: user.age,
                 city: user.city,
+                phoneNumber: user.phoneNumber,
                 gender: user.gender,
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete,

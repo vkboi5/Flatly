@@ -71,6 +71,21 @@ const listingSchema = new mongoose.Schema({
         default: false
     },
     
+    // Replacement tracking
+    replacementDeadline: {
+        type: Date,
+        default: null
+    },
+    replacementStatus: {
+        type: String,
+        enum: ['pending', 'active', 'extended', 'fulfilled', 'expired'],
+        default: 'pending'
+    },
+    replacementNotified: {
+        type: Boolean,
+        default: false
+    },
+    
     // Status
     status: {
         type: String,

@@ -191,11 +191,16 @@ const YourListings = () => {
                                         </div>
                                     )}
                                     
-                                    {/* Status Badge */}
-                                    <div className="absolute top-3 left-3">
+                                    {/* Status Badges */}
+                                    <div className="absolute top-3 left-3 flex flex-col gap-2">
                                         <span className={getStatusBadge(listing.status)}>
                                             {listing.status}
                                         </span>
+                                        {listing.isReplacementListing && (
+                                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                14-Day Guarantee
+                                            </span>
+                                        )}
                                     </div>
 
                                     {/* Image Count */}

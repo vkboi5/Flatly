@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { profileService } from '../services/profile';
 import { getProfilePictureUrl } from '../utils/api';
-import { User, Mail, MapPin, Hash, Heart, Instagram, Edit2, Save, X as XIcon, UserCircle2, Venus, Mars } from 'lucide-react';
+import { User, Mail, MapPin, Hash, Heart, Instagram, Edit2, Save, X as XIcon, UserCircle2, Venus, Mars, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Profile = () => {
@@ -13,6 +13,7 @@ const Profile = () => {
         name: '',
         age: '',
         city: '',
+        phoneNumber: '',
         userType: '',
         instagramHandle: '',
         bio: '',
@@ -30,6 +31,7 @@ const Profile = () => {
             name: profileData.name || '',
             age: profileData.age || '',
             city: profileData.city || '',
+            phoneNumber: profileData.phoneNumber || '',
             userType: profileData.userType || '',
             instagramHandle: profileData.instagramHandle || '',
             bio: profileData.bio || '',
@@ -277,6 +279,24 @@ const Profile = () => {
                             />
                         ) : (
                             <div className="text-gray-900 text-lg">{profile.city}</div>
+                        )}
+                    </div>
+                    <div>
+                        <label className="block text-gray-700 font-semibold mb-1 flex items-center gap-1">
+                            <Phone className="w-4 h-4 text-blue-400" /> Phone Number
+                        </label>
+                        {editMode ? (
+                            <input 
+                                type="tel" 
+                                name="phoneNumber" 
+                                value={form.phoneNumber} 
+                                onChange={handleChange} 
+                                className="w-full border-2 border-blue-100 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" 
+                                placeholder="Enter phone number" 
+                                required 
+                            />
+                        ) : (
+                            <div className="text-gray-900 text-lg">{profile.phoneNumber || <span className="text-gray-400">Not provided</span>}</div>
                         )}
                     </div>
                     <div>

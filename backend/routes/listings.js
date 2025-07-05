@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import Listing from '../models/Listing.js';
 import { authenticate } from '../middleware/auth.js';
+import { markReplacementFulfilled } from '../utils/replacementMonitor.js';
 
 const router = express.Router();
 
@@ -80,6 +81,8 @@ router.post('/', authenticate, upload.array('images', 5), async (req, res) => {
             });
         }
 
+        const isReplacement = isReplacementListing === 'true';
+        
         const listing = new Listing({
             owner: req.user._id,
             title,
@@ -91,7 +94,10 @@ router.post('/', authenticate, upload.array('images', 5), async (req, res) => {
             area,
             amenities: amenitiesArray,
             images,
-            isReplacementListing: isReplacementListing === 'true'
+            isReplacementListing: isReplacement,
+            // Set replacement deadline if this is a replacement listing
+            replacementDeadline: isReplacement ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) : null,
+            replacementStatus: isReplacement ? 'active' : 'pending'
         });
 
         await listing.save();
@@ -256,6 +262,11 @@ router.put('/:id', authenticate, async (req, res) => {
             updates,
             { new: true, runValidators: true }
         ).select('-images');
+
+        // Check if listing status changed to 'rented' and mark replacement as fulfilled
+        if (updates.status === 'rented' && updatedListing.isReplacementListing) {
+            await markReplacementFulfilled(req.params.id);
+        }
 
         res.json({
             message: 'Listing updated successfully',
@@ -474,6 +485,37 @@ router.get('/debug/images', authenticate, async (req, res) => {
         });
     } catch (error) {
         console.error('Debug images error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Debug route - check replacement listings
+router.get('/debug/replacements', authenticate, async (req, res) => {
+    try {
+        const replacementListings = await Listing.find({
+            isReplacementListing: true
+        }).populate('owner', 'name email').select('title isReplacementListing replacementDeadline replacementStatus replacementNotified status createdAt owner');
+        
+        const debug = replacementListings.map(listing => ({
+            id: listing._id,
+            title: listing.title,
+            owner: listing.owner.name,
+            ownerEmail: listing.owner.email,
+            status: listing.status,
+            replacementStatus: listing.replacementStatus,
+            replacementDeadline: listing.replacementDeadline,
+            replacementNotified: listing.replacementNotified,
+            createdAt: listing.createdAt,
+            daysRemaining: listing.replacementDeadline ? 
+                Math.ceil((new Date(listing.replacementDeadline) - new Date()) / (1000 * 60 * 60 * 24)) : null
+        }));
+        
+        res.json({ 
+            total: replacementListings.length,
+            listings: debug 
+        });
+    } catch (error) {
+        console.error('Debug replacements error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

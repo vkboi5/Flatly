@@ -13,6 +13,7 @@ const SwipeFeed = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [swiping, setSwiping] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [stats, setStats] = useState({
         totalSwiped: 0,
         totalLiked: 0,
@@ -88,16 +89,51 @@ const SwipeFeed = () => {
         };
     }, [tutorialAnimating, currentIndex]);
 
-    const loadMatches = async () => {
+    const loadMatches = async (append = false) => {
         try {
-            setLoading(true);
+            if (append) {
+                setLoadingMore(true);
+            } else {
+                setLoading(true);
+            }
+            
+            console.log('Loading matches...', { append, currentIndex, currentMatches: matches.length });
+            
             const response = await matchingService.getPotentialMatches(10);
-            setMatches(response.matches || []);
+            const newMatches = response.matches || [];
+            
+            console.log('Received matches:', { count: newMatches.length, append });
+            
+            if (append) {
+                // Append new matches to existing ones, filtering out duplicates
+                setMatches(prevMatches => {
+                    const existingIds = new Set(prevMatches.map(m => m._id));
+                    const uniqueNewMatches = newMatches.filter(m => !existingIds.has(m._id));
+                    
+                    console.log('Appending matches:', { 
+                        existing: prevMatches.length, 
+                        new: uniqueNewMatches.length, 
+                        total: prevMatches.length + uniqueNewMatches.length 
+                    });
+                    
+                    // Only append if we have new unique matches
+                    if (uniqueNewMatches.length > 0) {
+                        return [...prevMatches, ...uniqueNewMatches];
+                    }
+                    return prevMatches;
+                });
+            } else {
+                // Replace matches (initial load)
+                console.log('Replacing matches:', { count: newMatches.length });
+                setMatches(newMatches);
+                setCurrentIndex(0);
+            }
         } catch (error) {
             toast.error('Failed to load matches');
             console.error('Error loading matches:', error);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
@@ -126,6 +162,8 @@ const SwipeFeed = () => {
         setTimeout(() => setSwipeFeedback(null), 700); // Hide after 700ms
         const currentMatch = matches[currentIndex];
 
+        console.log('Swiping:', { action, currentIndex, totalMatches: matches.length, matchId: currentMatch._id });
+
         try {
             const response = await matchingService.swipe(currentMatch._id, action);
             
@@ -139,20 +177,24 @@ const SwipeFeed = () => {
                 });
             }
 
+            // Move to next card after feedback
+            const nextIndex = currentIndex + 1;
             setTimeout(() => {
-            setCurrentIndex(prev => prev + 1);
+                setCurrentIndex(nextIndex);
                 setDragOffset({ x: 0, y: 0 });
-            }, 700); // Move to next card after feedback
+                
+                // Load more matches if we're running low
+                if (nextIndex >= matches.length - 3 && !loadingMore) {
+                    console.log('Loading more matches...', { nextIndex, totalMatches: matches.length });
+                    loadMatches(true); // Append new matches
+                }
+            }, 700);
             
             // Refresh user data after swipe; stats will update via useEffect
             if (refreshUser) {
                 await refreshUser();
             }
             
-            // Load more matches if we're running low
-            if (currentIndex >= matches.length - 3) {
-                loadMatches();
-            }
         } catch (error) {
             toast.error('Failed to process swipe');
             console.error('Swipe error:', error);
@@ -274,7 +316,7 @@ const SwipeFeed = () => {
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <button
-                                    onClick={loadMatches}
+                                    onClick={() => loadMatches(false)}
                                     className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
                                 >
                                     Refresh Matches
@@ -459,6 +501,13 @@ const SwipeFeed = () => {
                                 <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-md text-sm font-semibold shadow-lg">
                                     {(currentMatch.matchScore * 100).toFixed(0)}% Match
                                 </div>
+                                
+                                {/* Replacement Badge */}
+                                {currentMatch.hasReplacementListing && (
+                                    <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-semibold shadow-lg">
+                                        🏃‍♂️ Urgent
+                                    </div>
+                                )}
 
                                 {/* Gradient Overlay */}
                                 <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent"></div>
@@ -785,6 +834,13 @@ const SwipeFeed = () => {
                                     <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-md text-sm font-semibold shadow-lg">
                                         {(currentMatch.matchScore * 100).toFixed(0)}% Match
                                     </div>
+                                    
+                                    {/* Replacement Badge */}
+                                    {currentMatch.hasReplacementListing && (
+                                        <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-semibold shadow-lg">
+                                            🏃‍♂️ Urgent
+                                        </div>
+                                    )}
 
                                     {/* Gradient Overlay */}
                                     <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent"></div>

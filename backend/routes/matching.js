@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
+import Listing from '../models/Listing.js';
 import { authenticate } from '../middleware/auth.js';
 import { getPotentialMatches, checkMutualMatch, calculateMatchScore, fixOrphanedMatches } from '../utils/matching.js';
 
@@ -16,7 +17,7 @@ router.get('/potential', authenticate, async (req, res) => {
         }
         
         const freshUser = await User.findById(req.user._id);
-        const matches = await getPotentialMatches(freshUser, User, parseInt(limit));
+        const matches = await getPotentialMatches(freshUser, User, parseInt(limit), Listing);
         
         res.json({
             matches,
