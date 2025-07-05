@@ -37,6 +37,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    // New field for storing profile picture as binary data in MongoDB
+    profilePictureData: {
+        data: Buffer,
+        contentType: String
+    },
     instagramHandle: {
         type: String,
         default: null
@@ -45,12 +50,22 @@ const userSchema = new mongoose.Schema({
         type: String,
         maxlength: 500
     },
+    gender: {
+        type: String,
+        enum: ['male', 'female', 'other'],
+        required: true
+    },
+    preferredGender: {
+        type: String,
+        enum: ['male', 'female', 'other', 'any'],
+        default: 'any'
+    },
     
     // User type
     userType: {
         type: String,
         enum: ['find-room', 'find-roommate'],
-        required: true
+        default: null
     },
     
     // Questionnaire vectors

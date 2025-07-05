@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { MessageCircle, Heart, User, MapPin, Instagram, ArrowLeft, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getProfilePictureUrl } from '../utils/api';
 
 const Matches = () => {
     const { user } = useAuth();
@@ -100,15 +101,20 @@ const Matches = () => {
                                 >
                                     {/* Profile Image */}
                                     <div className="relative h-64 bg-gradient-to-b from-gray-200 to-gray-300">
-                                        {match.user.profilePicture ? (
+                                        {match.user.hasProfilePicture ? (
                                             <img 
-                                                src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${match.user.profilePicture}`}
+                                                src={`${getProfilePictureUrl(match.user.id)}?t=${Date.now()}`}
                                                 alt={match.user.name}
                                                 className="w-full h-full object-cover"
+                                                key={`match-${match.user.id}-${Date.now()}`}
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center">
-                                                <User className="w-16 h-16 text-gray-400" />
+                                                <img 
+                                                    src="/default-avatar.svg" 
+                                                    alt="Default avatar" 
+                                                    className="w-16 h-16 text-gray-400"
+                                                />
                                             </div>
                                         )}
                                         

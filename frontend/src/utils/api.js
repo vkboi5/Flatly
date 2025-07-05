@@ -39,4 +39,9 @@ api.interceptors.response.use(
     }
 );
 
+// Utility function to get profile picture URL
+export const getProfilePictureUrl = (userId) => {
+    return `${API_BASE_URL}/profile/picture/${userId}`;
+};
+
 export default api; 

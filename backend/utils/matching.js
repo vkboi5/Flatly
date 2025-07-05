@@ -178,32 +178,48 @@ export const getPotentialMatches = async (user, User, limit = 50) => {
                     ...user.dislikedUsers
                 ]
             }
-        }).select('-password')
+        }).select('name age city profilePicture profilePictureData instagramHandle bio userType selfVector desiredVector gender preferredGender')
           .limit(limit * 3) // Get more to filter after scoring
           .lean();
         
-        console.log(`Found ${potentialMatches.length} potential matches`);
+        // Gender filtering
+        let filteredMatches = potentialMatches;
+        if (user.userType === 'find-roommate') {
+            filteredMatches = filteredMatches.filter(match => {
+                // If user has a preferredGender, match must have that gender (unless 'any')
+                const userPref = user.preferredGender || 'any';
+                const matchPref = match.preferredGender || 'any';
+                const genderOk = userPref === 'any' || match.gender === userPref;
+                // Also, if match has a preferredGender, user's gender must match (unless 'any')
+                const reverseOk = matchPref === 'any' || user.gender === matchPref;
+                return genderOk && reverseOk;
+            });
+        }
         
-        if (potentialMatches.length === 0) {
+        console.log(`Found ${filteredMatches.length} potential matches`);
+        
+        if (filteredMatches.length === 0) {
             return [];
         }
         
         // Calculate match scores with enhanced error handling
         const matchesWithScores = [];
         
-        for (const match of potentialMatches) {
+        for (const match of filteredMatches) {
             try {
                 const matchScore = calculateMatchScore(user, match);
                 matchesWithScores.push({
                     ...match,
-                    matchScore: matchScore
+                    matchScore: matchScore,
+                    hasProfilePicture: !!match.profilePictureData
                 });
             } catch (error) {
                 console.error(`Error calculating score for match ${match._id}:`, error);
                 // Add with minimal score instead of skipping
                 matchesWithScores.push({
                     ...match,
-                    matchScore: 0.05
+                    matchScore: 0.05,
+                    hasProfilePicture: !!match.profilePictureData
                 });
             }
         }
@@ -391,7 +407,7 @@ export const mapSelfAnswersToVector = (answers) => {
     return validateAndNormalizeVector(vector, 'selfVector');
 };
 
-export const mapDesiredAnswersToVector = (answers) => {
+export const mapDesiredAnswersToVector = (answers, userType = 'find-roommate') => {
     if (!answers || typeof answers !== 'object') {
         console.warn('Invalid answers provided to mapDesiredAnswersToVector:', answers);
         return new Array(EXPECTED_VECTOR_LENGTH).fill(0.5);
@@ -399,25 +415,65 @@ export const mapDesiredAnswersToVector = (answers) => {
     
     const vector = [];
     
-    const questionMappings = {
-        cleanlinessExpectation: { 'very-important': 1, 'important': 0.7, 'somewhat': 0.5, 'not-important': 0 },
-        noiseTolerance: { 'very-tolerant': 1, 'tolerant': 0.7, 'moderate': 0.5, 'low-tolerance': 0 },
-        foodPreference: { 'similar': 1, 'complementary': 0.7, 'no-preference': 0.5 },
-        guestsPolicy: { 'frequent-ok': 1, 'occasional-ok': 0.5, 'prefer-none': 0 },
-        choreExpectations: { 'shared-equally': 1, 'flexible': 0.7, 'individual': 0.5 },
-        sleepSync: { 'similar-schedule': 1, 'flexible': 0.5, 'no-preference': 0.3 },
-        redFlags: { 'none': 1, 'minor-issues': 0.5, 'major-concerns': 0 },
-        colivingVibe: { 'friends': 1, 'friendly': 0.7, 'respectful': 0.5, 'minimal': 0 }
-    };
-    
-    // Map each answer to its numerical value for the 8 questions
-    Object.keys(questionMappings).forEach(key => {
-        if (answers[key] && questionMappings[key][answers[key]] !== undefined) {
-            vector.push(questionMappings[key][answers[key]]);
-        } else {
-            vector.push(0.5); // Default neutral value
-        }
-    });
+    if (userType === 'find-room') {
+        // Questions for people looking for rooms
+        const roomQuestionMappings = {
+            budgetRange: { 'under-15000': 0.2, '15000-25000': 0.4, '25000-35000': 0.6, '35000-45000': 0.8, 'over-45000': 1 },
+            roomType: { 'private-room': 1, 'shared-room': 0.7, 'studio': 0.5, 'flexible': 0.6 },
+            locationPreference: { 'very-important': 1, 'important': 0.7, 'flexible': 0.5, 'not-important': 0.3 },
+            moveInTimeline: { 'asap': 1, 'month': 0.7, 'next-month': 0.5, 'flexible': 0.3 },
+            leaseLength: { 'short-term': 0.3, 'medium-term': 0.6, 'long-term': 1, 'flexible': 0.5 },
+            amenities: { 'wifi': 0.9, 'ac': 0.8, 'heating': 0.7, 'laundry': 0.8, 'parking': 0.7, 'gym': 0.6, 'pool': 0.5, 'balcony': 0.5, 'security': 0.8, 'elevator': 0.6, 'kitchen': 0.9, 'furnished': 0.7, 'cleaning': 0.6, 'utilities': 0.8, 'none': 0.3 },
+            furnished: { 'furnished': 1, 'unfurnished': 0.3, 'partially': 0.7, 'flexible': 0.5 },
+            roommatePreference: { 'prefer-roommates': 1, 'okay-roommates': 0.7, 'prefer-alone': 0.3, 'must-alone': 0 }
+        };
+        
+        // Map each answer to its numerical value for room questions
+        Object.keys(roomQuestionMappings).forEach(key => {
+            if (answers[key]) {
+                if (key === 'amenities' && Array.isArray(answers[key])) {
+                    // Handle multiselect amenities - calculate average score
+                    const selectedAmenities = answers[key];
+                    if (selectedAmenities.length === 0) {
+                        vector.push(0.3); // Default for no amenities selected
+                    } else {
+                        const scores = selectedAmenities.map(amenity => 
+                            roomQuestionMappings[key][amenity] || 0.5
+                        );
+                        const averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+                        vector.push(averageScore);
+                    }
+                } else if (roomQuestionMappings[key][answers[key]] !== undefined) {
+                    vector.push(roomQuestionMappings[key][answers[key]]);
+                } else {
+                    vector.push(0.5); // Default neutral value
+                }
+            } else {
+                vector.push(0.5); // Default neutral value
+            }
+        });
+    } else {
+        // Questions for people looking for roommates (existing logic)
+        const roommateQuestionMappings = {
+            cleanlinessExpectation: { 'very-important': 1, 'important': 0.7, 'somewhat': 0.5, 'not-important': 0 },
+            noiseTolerance: { 'very-tolerant': 1, 'tolerant': 0.7, 'moderate': 0.5, 'low-tolerance': 0 },
+            foodPreference: { 'similar': 1, 'complementary': 0.7, 'no-preference': 0.5 },
+            guestsPolicy: { 'frequent-ok': 1, 'occasional-ok': 0.5, 'prefer-none': 0 },
+            choreExpectations: { 'shared-equally': 1, 'flexible': 0.7, 'individual': 0.5 },
+            sleepSync: { 'similar-schedule': 1, 'flexible': 0.5, 'no-preference': 0.3 },
+            redFlags: { 'none': 1, 'minor-issues': 0.5, 'major-concerns': 0 },
+            colivingVibe: { 'friends': 1, 'friendly': 0.7, 'respectful': 0.5, 'minimal': 0 }
+        };
+        
+        // Map each answer to its numerical value for roommate questions
+        Object.keys(roommateQuestionMappings).forEach(key => {
+            if (answers[key] && roommateQuestionMappings[key][answers[key]] !== undefined) {
+                vector.push(roommateQuestionMappings[key][answers[key]]);
+            } else {
+                vector.push(0.5); // Default neutral value
+            }
+        });
+    }
     
     return validateAndNormalizeVector(vector, 'desiredVector');
 }; 

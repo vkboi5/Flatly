@@ -15,7 +15,8 @@ router.get('/potential', authenticate, async (req, res) => {
             return res.status(400).json({ message: 'Please complete your profile first' });
         }
         
-        const matches = await getPotentialMatches(req.user, User, parseInt(limit));
+        const freshUser = await User.findById(req.user._id);
+        const matches = await getPotentialMatches(freshUser, User, parseInt(limit));
         
         res.json({
             matches,
@@ -91,7 +92,7 @@ router.post('/swipe', authenticate, async (req, res) => {
 router.get('/matches', authenticate, async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
-            .populate('matches.user', 'name age city profilePicture instagramHandle bio userType')
+            .populate('matches.user', 'name age city profilePicture profilePictureData instagramHandle bio userType')
             .select('matches');
         
         // Sort matches by creation date (newest first)
@@ -121,7 +122,7 @@ router.get('/match/:matchId', authenticate, async (req, res) => {
         
         // Get full user details for the match
         const matchUser = await User.findById(match.user)
-            .select('name age city profilePicture instagramHandle bio userType');
+            .select('name age city profilePicture profilePictureData instagramHandle bio userType');
         
         res.json({
             match: {
@@ -172,8 +173,8 @@ router.delete('/match/:matchId', authenticate, async (req, res) => {
 router.get('/swipe-history', authenticate, async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
-            .populate('likedUsers', 'name age city profilePicture userType')
-            .populate('dislikedUsers', 'name age city profilePicture userType')
+            .populate('likedUsers', 'name age city profilePicture profilePictureData userType')
+            .populate('dislikedUsers', 'name age city profilePicture profilePictureData userType')
             .select('likedUsers dislikedUsers');
         
         res.json({

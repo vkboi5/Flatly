@@ -10,16 +10,8 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/profiles/');
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// Configure multer for memory storage (to store in MongoDB)
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage: storage,
@@ -42,7 +34,7 @@ const upload = multer({
 // Update basic profile information
 router.put('/update', authenticate, async (req, res) => {
     try {
-        const { name, age, city, instagramHandle, bio } = req.body;
+        const { name, age, city, instagramHandle, bio, userType, gender } = req.body;
         const updates = {};
         
         if (name) updates.name = name.trim();
@@ -55,6 +47,18 @@ router.put('/update', authenticate, async (req, res) => {
         if (city) updates.city = city.trim();
         if (instagramHandle !== undefined) updates.instagramHandle = instagramHandle.trim() || null;
         if (bio !== undefined) updates.bio = bio.trim() || null;
+        if (userType) {
+            if (!['find-room', 'find-roommate'].includes(userType)) {
+                return res.status(400).json({ message: 'Invalid user type' });
+            }
+            updates.userType = userType;
+        }
+        if (gender) {
+            if (!['male', 'female', 'other'].includes(gender)) {
+                return res.status(400).json({ message: 'Invalid gender' });
+            }
+            updates.gender = gender;
+        }
         
         const user = await User.findByIdAndUpdate(
             req.user._id,
@@ -70,6 +74,7 @@ router.put('/update', authenticate, async (req, res) => {
                 name: user.name,
                 age: user.age,
                 city: user.city,
+                gender: user.gender,
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete,
                 profilePicture: user.profilePicture,
@@ -90,20 +95,27 @@ router.post('/upload-picture', authenticate, upload.single('profilePicture'), as
             return res.status(400).json({ message: 'No file uploaded' });
         }
         
-        const profilePictureUrl = `/uploads/profiles/${req.file.filename}`;
+        // Store image data in MongoDB
+        const profilePictureData = {
+            data: req.file.buffer,
+            contentType: req.file.mimetype
+        };
         
         const user = await User.findByIdAndUpdate(
             req.user._id,
-            { profilePicture: profilePictureUrl },
+            { 
+                profilePictureData: profilePictureData,
+                profilePicture: null // Clear the old file path
+            },
             { new: true }
         ).select('-password');
         
         res.json({
             message: 'Profile picture uploaded successfully',
-            profilePicture: profilePictureUrl,
             user: {
                 id: user._id,
-                profilePicture: user.profilePicture
+                profilePicture: null,
+                hasProfilePicture: !!user.profilePictureData
             }
         });
     } catch (error) {
@@ -158,7 +170,7 @@ router.post('/questionnaire/desired', authenticate, async (req, res) => {
         }
         
         // Convert answers to vector
-        const desiredVector = mapDesiredAnswersToVector(answers);
+        const desiredVector = mapDesiredAnswersToVector(answers, req.user.userType);
         
         // Get current user to check self vector
         const currentUser = await User.findById(req.user._id);
@@ -196,9 +208,11 @@ router.get('/me', authenticate, async (req, res) => {
                 name: user.name,
                 age: user.age,
                 city: user.city,
+                gender: user.gender,
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete,
                 profilePicture: user.profilePicture,
+                hasProfilePicture: !!user.profilePictureData,
                 instagramHandle: user.instagramHandle,
                 bio: user.bio,
                 selfVector: user.selfVector,
@@ -218,7 +232,7 @@ router.get('/user/:id', authenticate, async (req, res) => {
     try {
         const { id } = req.params;
         
-        const user = await User.findById(id).select('name age city profilePicture instagramHandle bio userType');
+        const user = await User.findById(id).select('name age city profilePicture profilePictureData instagramHandle bio userType');
         
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -232,6 +246,7 @@ router.get('/user/:id', authenticate, async (req, res) => {
                 city: user.city,
                 userType: user.userType,
                 profilePicture: user.profilePicture,
+                hasProfilePicture: !!user.profilePictureData,
                 instagramHandle: user.instagramHandle,
                 bio: user.bio
             }
@@ -242,12 +257,39 @@ router.get('/user/:id', authenticate, async (req, res) => {
     }
 });
 
+// Serve profile picture from MongoDB
+router.get('/picture/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        const user = await User.findById(userId).select('profilePictureData');
+        
+        if (!user || !user.profilePictureData) {
+            return res.status(404).json({ message: 'Profile picture not found' });
+        }
+        
+        // Set proper headers for image serving
+        res.set('Content-Type', user.profilePictureData.contentType);
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+        
+        res.send(user.profilePictureData.data);
+    } catch (error) {
+        console.error('Get profile picture error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Delete profile picture
 router.delete('/picture', authenticate, async (req, res) => {
     try {
         const user = await User.findByIdAndUpdate(
             req.user._id,
-            { profilePicture: null },
+            { 
+                profilePicture: null,
+                profilePictureData: null
+            },
             { new: true }
         ).select('-password');
         
@@ -255,7 +297,8 @@ router.delete('/picture', authenticate, async (req, res) => {
             message: 'Profile picture deleted successfully',
             user: {
                 id: user._id,
-                profilePicture: user.profilePicture
+                profilePicture: user.profilePicture,
+                hasProfilePicture: false
             }
         });
     } catch (error) {

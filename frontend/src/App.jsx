@@ -40,95 +40,107 @@ const PublicRoute = ({ children }) => {
     return !isAuthenticated ? children : <Navigate to="/app" />;
 };
 
-// App Routes component
-const AppRoutes = () => {
+// App Content component - this will be wrapped by AuthProvider
+const AppContent = () => {
     const { user } = useAuth();
     
     return (
-        <Routes>
-            {/* Landing Page */}
-            <Route path="/" element={<LandingPage />} />
-            
-            {/* Public Routes */}
-            <Route path="/login" element={
-                <PublicRoute>
-                    <Login />
-                </PublicRoute>
-            } />
-            <Route path="/register" element={
-                <PublicRoute>
-                    <Register />
-                </PublicRoute>
-            } />
-            
-            {/* Protected Routes */}
-            <Route path="/app" element={
-                <ProtectedRoute>
-                    <>
-                        <Navbar />
-                        {!user?.isProfileComplete ? (
-                            <Navigate to="/onboarding" />
-                        ) : (
-                            <SwipeFeed />
-                        )}
-                    </>
-                </ProtectedRoute>
-            } />
-            
-            <Route path="/onboarding" element={
-                <ProtectedRoute>
-                    <Onboarding />
-                </ProtectedRoute>
-            } />
-            
-            <Route path="/questionnaire/self" element={
-                <ProtectedRoute>
-                    <SelfQuestionnaire />
-                </ProtectedRoute>
-            } />
-            
-            <Route path="/questionnaire/desired" element={
-                <ProtectedRoute>
-                    <DesiredQuestionnaire />
-                </ProtectedRoute>
-            } />
-            
-            <Route path="/profile-creation" element={
-                <ProtectedRoute>
-                    <ProfileCreation />
-                </ProtectedRoute>
-            } />
-            
-            <Route path="/matches" element={
-                <ProtectedRoute>
-                    <>
-                        <Navbar />
-                        <Matches />
-                    </>
-                </ProtectedRoute>
-            } />
-            
-            <Route path="/profile" element={
-                <ProtectedRoute>
-                    <>
-                        <Navbar />
-                        <Profile />
-                    </>
-                </ProtectedRoute>
-            } />
-            
-            <Route path="/settings" element={
-                <ProtectedRoute>
-                    <>
-                        <Navbar />
-                        <Settings />
-                    </>
-                </ProtectedRoute>
-            } />
-            
-            {/* Default redirects */}
-            <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+        <div className="min-h-screen w-full bg-gray-50">
+            <Routes>
+                {/* Landing Page */}
+                <Route path="/" element={<LandingPage />} />
+                
+                {/* Public Routes */}
+                <Route path="/login" element={
+                    <PublicRoute>
+                        <Login />
+                    </PublicRoute>
+                } />
+                <Route path="/register" element={
+                    <PublicRoute>
+                        <Register />
+                    </PublicRoute>
+                } />
+                
+                {/* Protected Routes */}
+                <Route path="/app" element={
+                    <ProtectedRoute>
+                        <>
+                            <Navbar />
+                            {!user?.isProfileComplete ? (
+                                <Navigate to="/onboarding" />
+                            ) : (
+                                <SwipeFeed />
+                            )}
+                        </>
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/onboarding" element={
+                    <ProtectedRoute>
+                        <Onboarding />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/questionnaire/self" element={
+                    <ProtectedRoute>
+                        <SelfQuestionnaire />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/questionnaire/desired" element={
+                    <ProtectedRoute>
+                        <DesiredQuestionnaire />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/profile-creation" element={
+                    <ProtectedRoute>
+                        <ProfileCreation />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/matches" element={
+                    <ProtectedRoute>
+                        <>
+                            <Navbar />
+                            <Matches />
+                        </>
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/profile" element={
+                    <ProtectedRoute>
+                        <>
+                            <Navbar />
+                            <Profile />
+                        </>
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/settings" element={
+                    <ProtectedRoute>
+                        <>
+                            <Navbar />
+                            <Settings />
+                        </>
+                    </ProtectedRoute>
+                } />
+                
+                {/* Default redirects */}
+                <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+            <Toaster 
+                position="top-right"
+                toastOptions={{
+                    duration: 4000,
+                    style: {
+                        background: '#363636',
+                        color: '#fff',
+                    },
+                }}
+            />
+        </div>
     );
 };
 
@@ -137,19 +149,7 @@ const App = () => {
     return (
         <AuthProvider>
             <Router>
-                <div className="min-h-screen w-full bg-gray-50">
-                    <AppRoutes />
-                    <Toaster 
-                        position="top-right"
-                        toastOptions={{
-                            duration: 4000,
-                            style: {
-                                background: '#363636',
-                                color: '#fff',
-                            },
-                        }}
-                    />
-                </div>
+                <AppContent />
             </Router>
         </AuthProvider>
     );

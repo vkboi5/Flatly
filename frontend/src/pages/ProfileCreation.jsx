@@ -13,7 +13,8 @@ const ProfileCreation = () => {
     const [profileData, setProfileData] = useState({
         bio: '',
         instagramHandle: '',
-        city: user?.city || ''
+        city: user?.city || '',
+        preferredGender: 'any'
     });
     const [profilePicture, setProfilePicture] = useState(null);
     const [profilePicturePreview, setProfilePicturePreview] = useState(null);
@@ -54,7 +55,7 @@ const ProfileCreation = () => {
             }
 
             // Update profile information
-            if (profileData.bio || profileData.instagramHandle || profileData.city) {
+            if (profileData.bio || profileData.instagramHandle || profileData.city || profileData.preferredGender) {
                 await profileService.updateProfile(profileData);
                 toast.success('Profile updated!');
             }
@@ -133,6 +134,28 @@ const ProfileCreation = () => {
                                 Upload a clear photo of yourself (Max 5MB)
                             </p>
                         </div>
+
+
+
+                        {/* Preferred Gender Section (only if finding roommate) */}
+                        {user?.userType === 'find-roommate' && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Preferred Gender of Roommate
+                                </label>
+                                <select
+                                    name="preferredGender"
+                                    value={profileData.preferredGender}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                >
+                                    <option value="any">Any</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        )}
 
                         {/* Bio Section */}
                         <div>

@@ -8,10 +8,18 @@ const router = express.Router();
 // Register new user
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, name, age, city, userType } = req.body;
+        const { email, password, name, age, city, gender } = req.body;
+        
+        console.log('Registration request body:', req.body);
         
         // Validation
-        if (!email || !password || !name || !age || !city || !userType) {
+        if (!email || !password || !name || !age || !city || !gender) {
+            console.log('Missing fields:', { email: !!email, password: !!password, name: !!name, age: !!age, city: !!city, gender: !!gender });
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+        
+        // Check for empty strings
+        if (email.trim() === '' || password.trim() === '' || name.trim() === '' || city.trim() === '') {
             return res.status(400).json({ message: 'All fields are required' });
         }
         
@@ -23,12 +31,13 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'Password must be at least 6 characters' });
         }
         
-        if (age < 18 || age > 100) {
+        const ageNum = parseInt(age);
+        if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
             return res.status(400).json({ message: 'Age must be between 18 and 100' });
         }
         
-        if (!['find-room', 'find-roommate'].includes(userType)) {
-            return res.status(400).json({ message: 'Invalid user type' });
+        if (!['male', 'female', 'other'].includes(gender)) {
+            return res.status(400).json({ message: 'Invalid gender' });
         }
         
         // Check if user already exists
@@ -44,7 +53,7 @@ router.post('/register', async (req, res) => {
             name: name.trim(),
             age: parseInt(age),
             city: city.trim(),
-            userType
+            gender
         });
         
         await user.save();
@@ -114,7 +123,8 @@ router.post('/login', async (req, res) => {
                 city: user.city,
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete,
-                profilePicture: user.profilePicture
+                profilePicture: user.profilePicture,
+                hasProfilePicture: !!user.profilePictureData
             }
         });
     } catch (error) {
@@ -142,10 +152,13 @@ router.get('/me', authenticate, async (req, res) => {
                 userType: user.userType,
                 isProfileComplete: user.isProfileComplete,
                 profilePicture: user.profilePicture,
+                hasProfilePicture: !!user.profilePictureData,
                 instagramHandle: user.instagramHandle,
                 bio: user.bio,
                 lastActive: user.lastActive,
-                matches: user.matches
+                matches: user.matches,
+                likedUsers: user.likedUsers,
+                dislikedUsers: user.dislikedUsers
             }
         });
     } catch (error) {

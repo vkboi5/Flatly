@@ -1,16 +1,30 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { profileService } from '../services/profile';
 import { Home, UserPlus, MapPin, ArrowRight } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Onboarding = () => {
     const [selectedCity, setSelectedCity] = useState('');
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const navigate = useNavigate();
 
-    const handleCTAClick = (type) => {
-        // Navigate to self questionnaire
-        navigate('/questionnaire/self');
+    const handleCTAClick = async (userType) => {
+        try {
+            // Save the userType to the backend
+            await profileService.updateProfile({ userType });
+            
+            // Update the user context
+            const updatedUser = { ...user, userType };
+            updateUser(updatedUser);
+            
+            // Navigate to self questionnaire
+            navigate('/questionnaire/self');
+        } catch (error) {
+            console.error('Error saving userType:', error);
+            toast.error('Failed to save your preference. Please try again.');
+        }
     };
 
     const popularCities = [
