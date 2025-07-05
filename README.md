@@ -16,7 +16,7 @@ Flatly/
 - **Vector-based matching**: Cosine similarity algorithm for compatibility scoring
 - **Swipe interface**: Tinder-like matching experience
 - **Chat system**: Basic messaging for mutual matches
-- **Mobile-first**: Responsive design optimized for mobile devices
+- **Mobile-first**: Responsive design optimized for mobile device
 
 ## Tech Stack
 
