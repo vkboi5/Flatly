@@ -97,7 +97,16 @@ const Matches = () => {
                             {matches.map((match) => (
                                 <div 
                                     key={match._id} 
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300"
+                                    className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300 ${
+                                        user?.userType === 'find-room' && match.user.userType === 'find-roommate' 
+                                            ? 'cursor-pointer' 
+                                            : ''
+                                    }`}
+                                    onClick={() => {
+                                        if (user?.userType === 'find-room' && match.user.userType === 'find-roommate') {
+                                            navigate(`/user/${match.user.id}`);
+                                        }
+                                    }}
                                 >
                                     {/* Profile Image */}
                                     <div className="relative h-64 bg-gradient-to-b from-gray-200 to-gray-300">
@@ -169,6 +178,20 @@ const Matches = () => {
                                         <div className="flex items-center text-gray-400 text-xs mb-4">
                                             <Calendar className="w-3 h-3 mr-1" />
                                             <span>Matched {formatMatchDate(match.createdAt)}</span>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-2">
+                                            <button 
+                                                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // Prevent card click
+                                                    // Handle message functionality
+                                                }}
+                                            >
+                                                <MessageCircle className="w-4 h-4 mr-1" />
+                                                <span className="text-sm">Message</span>
+                                            </button>
                                         </div>
 
                                     </div>

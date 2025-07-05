@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { matchingService } from '../services/matching';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Heart, X, User, MapPin, Instagram, Sparkles, MessageCircle, Settings, TrendingUp, Users, Clock, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Heart, X, User, MapPin, Instagram, Sparkles, MessageCircle, Settings, TrendingUp, Users, Clock, ArrowLeft, ArrowRight, Eye } from 'lucide-react';
 import { getProfilePictureUrl } from '../utils/api';
 
 const SwipeFeed = () => {
@@ -201,6 +201,16 @@ const SwipeFeed = () => {
         }
     };
 
+    const handleCardClick = (e) => {
+        // Only handle click if we're not dragging and it's a room seeker viewing room provider
+        if (!isDragging && user?.userType === 'find-room' && currentMatch.userType === 'find-roommate') {
+            // Prevent click during swipe animation
+            if (swiping) return;
+            
+            navigate(`/user/${currentMatch._id}`);
+        }
+    };
+
     const getCompatibilityTags = (match) => {
         const tags = [];
         // Only show tags for real shared fields between current user and match
@@ -301,27 +311,39 @@ const SwipeFeed = () => {
                                     <Heart className="w-8 h-8 text-blue-600" />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-2">Welcome to Flatly!</h3>
-                                <p className="text-gray-600 mb-6">Swipe right to like, left to pass on potential roommates</p>
+                                <p className="text-gray-600 mb-6">Learn how to interact with potential roommates</p>
                             </div>
                             
-                            {/* Swipe Animation */}
-                            <div className="relative mb-6">
-                                <div className="bg-white rounded-xl shadow-lg p-4 border-2 border-gray-200 relative">
-                                    <div className="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-2"></div>
-                                    <div className="h-2 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
-                                    <div className="h-2 bg-gray-200 rounded w-1/2 mx-auto"></div>
+                            {/* Interaction Instructions */}
+                            <div className="space-y-4 mb-6">
+                                {/* Swipe Animation */}
+                                <div className="relative">
+                                    <div className="bg-white rounded-xl shadow-lg p-4 border-2 border-gray-200 relative">
+                                        <div className="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-2"></div>
+                                        <div className="h-2 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
+                                        <div className="h-2 bg-gray-200 rounded w-1/2 mx-auto"></div>
+                                    </div>
+                                    
+                                    {/* Swipe Arrows */}
+                                    <div className="absolute inset-0 flex items-center justify-between px-4">
+                                        <div className="flex items-center text-red-500 animate-pulse">
+                                            <ArrowLeft className="w-6 h-6 mr-2" />
+                                            <span className="text-sm font-medium">Pass</span>
+                                        </div>
+                                        <div className="flex items-center text-green-500 animate-pulse">
+                                            <span className="text-sm font-medium">Like</span>
+                                            <ArrowRight className="w-6 h-6 ml-2" />
+                                        </div>
+                                    </div>
                                 </div>
                                 
-                                {/* Swipe Arrows */}
-                                <div className="absolute inset-0 flex items-center justify-between px-4">
-                                    <div className="flex items-center text-red-500 animate-pulse">
-                                        <ArrowLeft className="w-6 h-6 mr-2" />
-                                        <span className="text-sm font-medium">Pass</span>
+                                {/* Click Instruction */}
+                                <div className="bg-blue-50 rounded-lg p-4 text-center">
+                                    <div className="flex items-center justify-center mb-2">
+                                        <Eye className="w-5 h-5 text-blue-600 mr-2" />
+                                        <span className="text-sm font-medium text-blue-800">Click on cards to view room details</span>
                                     </div>
-                                    <div className="flex items-center text-green-500 animate-pulse">
-                                        <span className="text-sm font-medium">Like</span>
-                                        <ArrowRight className="w-6 h-6 ml-2" />
-                                    </div>
+                                    <p className="text-xs text-blue-600">For room seekers viewing room providers</p>
                                 </div>
                             </div>
                             
@@ -369,7 +391,11 @@ const SwipeFeed = () => {
                     <div className="max-w-sm mx-auto mb-8">
                         <div 
                             ref={cardRef}
-                            className="relative bg-white rounded-2xl shadow-lg overflow-hidden cursor-grab active:cursor-grabbing"
+                            className={`relative bg-white rounded-2xl shadow-lg overflow-hidden ${
+                                user?.userType === 'find-room' && currentMatch.userType === 'find-roommate' 
+                                    ? 'cursor-pointer' 
+                                    : 'cursor-grab active:cursor-grabbing'
+                            }`}
                             style={{
                                 transform: tutorialAnimating
                                     ? tutorialStep === 'right'
@@ -387,6 +413,7 @@ const SwipeFeed = () => {
                             onTouchStart={tutorialAnimating ? undefined : handleDragStart}
                             onTouchMove={tutorialAnimating ? undefined : handleDragMove}
                             onTouchEnd={tutorialAnimating ? undefined : handleDragEnd}
+                            onClick={handleCardClick}
                         >
                             {/* Profile Image */}
                             <div className="relative h-80 bg-gradient-to-b from-gray-200 to-gray-300">
@@ -508,6 +535,9 @@ const SwipeFeed = () => {
                         <div className="text-center mt-3">
                             <p className="text-xs text-gray-500">
                                 Swipe left to pass, right to like
+                                {user?.userType === 'find-room' && currentMatch.userType === 'find-roommate' && (
+                                    <> • Click card to view rooms</>
+                                )}
                             </p>
                         </div>
                     </div>
@@ -692,7 +722,11 @@ const SwipeFeed = () => {
                             {/* Tinder-like Card */}
                             <div 
                                 ref={cardRef}
-                                className="relative bg-white rounded-2xl shadow-lg overflow-hidden cursor-grab active:cursor-grabbing"
+                                className={`relative bg-white rounded-2xl shadow-lg overflow-hidden ${
+                                    user?.userType === 'find-room' && currentMatch.userType === 'find-roommate' 
+                                        ? 'cursor-pointer' 
+                                        : 'cursor-grab active:cursor-grabbing'
+                                }`}
                                 style={{
                                     transform: tutorialAnimating
                                         ? tutorialStep === 'right'
@@ -710,6 +744,7 @@ const SwipeFeed = () => {
                                 onTouchStart={tutorialAnimating ? undefined : handleDragStart}
                                 onTouchMove={tutorialAnimating ? undefined : handleDragMove}
                                 onTouchEnd={tutorialAnimating ? undefined : handleDragEnd}
+                                onClick={handleCardClick}
                             >
                                 {/* Profile Image */}
                                 <div className="relative h-80 bg-gradient-to-b from-gray-200 to-gray-300">
@@ -826,6 +861,9 @@ const SwipeFeed = () => {
                             <div className="text-center mt-3">
                                         <p className="text-xs text-gray-500">
                                     Swipe left to pass, right to like • Use arrow keys
+                                    {user?.userType === 'find-room' && currentMatch.userType === 'find-roommate' && (
+                                        <> • Click card to view rooms</>
+                                    )}
                                         </p>
                             </div>
                         </div>

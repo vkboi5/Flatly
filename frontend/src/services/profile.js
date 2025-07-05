@@ -45,6 +45,12 @@ export const profileService = {
         return response.data.user;
     },
 
+    // Get detailed user profile with listings
+    getUserDetailed: async (userId) => {
+        const response = await api.get(`/profile/user/${userId}/detailed`);
+        return response.data;
+    },
+
     // Delete profile picture
     deleteProfilePicture: async () => {
         const response = await api.delete('/profile/picture');

@@ -112,7 +112,7 @@ listingSchema.virtual('formattedRent').get(function() {
 
 // Virtual for first image
 listingSchema.virtual('mainImage').get(function() {
-    return this.images.length > 0 ? this.images[0] : null;
+    return this.images && this.images.length > 0 ? this.images[0] : null;
 });
 
 // Ensure virtual fields are serialized

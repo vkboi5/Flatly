@@ -58,5 +58,32 @@ export const listingsService = {
     // Get listing image URL
     getListingImageUrl: (listingId, imageIndex) => {
         return `${api.defaults.baseURL}/listings/${listingId}/images/${imageIndex}`;
+    },
+
+    // Get listing images count
+    getListingImagesCount: async (listingId) => {
+        const listing = await listingsService.getListing(listingId);
+        return listing.images ? listing.images.length : 0;
+    },
+
+    // Add images to existing listing
+    addImages: async (listingId, files) => {
+        const formData = new FormData();
+        files.forEach(file => {
+            formData.append('images', file);
+        });
+        
+        const response = await api.post(`/listings/${listingId}/images`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+
+    // Delete specific image from listing
+    deleteImage: async (listingId, imageIndex) => {
+        const response = await api.delete(`/listings/${listingId}/images/${imageIndex}`);
+        return response.data;
     }
 }; 

@@ -18,6 +18,8 @@ import Matches from './pages/Matches';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import AddListing from './pages/AddListing';
+import UserDetailView from './pages/UserDetailView';
+import YourListings from './pages/YourListings';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -154,6 +156,24 @@ const AppContent = () => {
                             <AddListing />
                         </>
                     </RoommateRoute>
+                } />
+                
+                <Route path="/your-listings" element={
+                    <RoommateRoute>
+                        <>
+                            <Navbar />
+                            <YourListings />
+                        </>
+                    </RoommateRoute>
+                } />
+                
+                <Route path="/user/:userId" element={
+                    <ProtectedRoute>
+                        <>
+                            <Navbar />
+                            <UserDetailView />
+                        </>
+                    </ProtectedRoute>
                 } />
                 
                 {/* Default redirects */}

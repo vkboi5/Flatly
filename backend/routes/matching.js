@@ -95,8 +95,17 @@ router.get('/matches', authenticate, async (req, res) => {
             .populate('matches.user', 'name age city profilePicture profilePictureData instagramHandle bio userType')
             .select('matches');
         
-        // Sort matches by creation date (newest first)
-        const matches = user.matches.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        // Sort matches by creation date (newest first) and add hasProfilePicture property
+        const matches = user.matches
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .map(match => ({
+                ...match.toObject(),
+                user: {
+                    ...match.user.toObject(),
+                    id: match.user._id,
+                    hasProfilePicture: !!match.user.profilePictureData
+                }
+            }));
         
         res.json({
             matches,

@@ -14,14 +14,25 @@ const upload = multer({
         fileSize: 5 * 1024 * 1024 // 5MB limit
     },
     fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif/;
-        const extname = allowedTypes.test(file.originalname.toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
+        // Check MIME type
+        const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        const mimeTypeValid = allowedMimeTypes.includes(file.mimetype);
         
-        if (mimetype && extname) {
+        // Check file extension
+        const allowedExtensions = /\.(jpg|jpeg|png|gif|webp)$/i;
+        const extensionValid = allowedExtensions.test(file.originalname);
+        
+        console.log('File upload validation:', {
+            filename: file.originalname,
+            mimetype: file.mimetype,
+            mimeTypeValid,
+            extensionValid
+        });
+        
+        if (mimeTypeValid && extensionValid) {
             return cb(null, true);
         } else {
-            cb(new Error('Only image files are allowed'));
+            cb(new Error(`Only image files are allowed. Received: ${file.mimetype}, filename: ${file.originalname}`));
         }
     }
 });
@@ -172,7 +183,17 @@ router.get('/:id', authenticate, async (req, res) => {
         listing.views += 1;
         await listing.save();
 
-        res.json({ listing });
+        // Return listing with image info but without actual image data
+        const listingResponse = {
+            ...listing.toObject(),
+            hasImages: listing.images && listing.images.length > 0,
+            imageCount: listing.images ? listing.images.length : 0
+        };
+        
+        // Remove image data to reduce response size
+        delete listingResponse.images;
+
+        res.json({ listing: listingResponse });
     } catch (error) {
         console.error('Get listing error:', error);
         res.status(500).json({ message: 'Server error' });
@@ -182,9 +203,29 @@ router.get('/:id', authenticate, async (req, res) => {
 // Get user's own listings
 router.get('/user/my-listings', authenticate, async (req, res) => {
     try {
-        const listings = await Listing.find({ owner: req.user._id })
-            .sort({ createdAt: -1 })
-            .select('-images');
+        const rawListings = await Listing.find({ owner: req.user._id })
+            .sort({ createdAt: -1 });
+
+        // Transform listings to include image metadata but not actual image data
+        const listings = rawListings.map(listing => ({
+            id: listing._id,
+            title: listing.title,
+            description: listing.description,
+            roomType: listing.roomType,
+            rent: listing.rent,
+            roomSize: listing.roomSize,
+            city: listing.city,
+            area: listing.area,
+            amenities: listing.amenities,
+            isReplacementListing: listing.isReplacementListing,
+            status: listing.status,
+            views: listing.views,
+            createdAt: listing.createdAt,
+            updatedAt: listing.updatedAt,
+            hasImages: listing.images && listing.images.length > 0,
+            imageCount: listing.images ? listing.images.length : 0,
+            interestedUsersCount: listing.interestedUsers ? listing.interestedUsers.length : 0
+        }));
 
         res.json({ listings });
     } catch (error) {
@@ -249,21 +290,37 @@ router.delete('/:id', authenticate, async (req, res) => {
     }
 });
 
-// Serve listing images
+// Serve listing images (no auth needed for public images)
 router.get('/:id/images/:imageIndex', async (req, res) => {
     try {
         const { id, imageIndex } = req.params;
+        
+        // Validate inputs
+        if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ message: 'Invalid listing ID' });
+        }
+        
+        if (isNaN(imageIndex) || imageIndex < 0) {
+            return res.status(400).json({ message: 'Invalid image index' });
+        }
+        
         const listing = await Listing.findById(id);
 
-        if (!listing || !listing.images[imageIndex]) {
+        if (!listing) {
+            return res.status(404).json({ message: 'Listing not found' });
+        }
+
+        if (!listing.images || !listing.images[imageIndex]) {
             return res.status(404).json({ message: 'Image not found' });
         }
 
         const image = listing.images[imageIndex];
-        res.set('Content-Type', image.contentType);
-        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.set('Pragma', 'no-cache');
-        res.set('Expires', '0');
+        
+        // Set proper headers for image serving
+        res.set('Content-Type', image.contentType || 'image/jpeg');
+        res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+        res.set('Access-Control-Allow-Origin', '*');
+        
         res.send(image.data);
     } catch (error) {
         console.error('Get listing image error:', error);
@@ -294,6 +351,129 @@ router.post('/:id/interest', authenticate, async (req, res) => {
         res.json({ message: 'Interest expressed successfully' });
     } catch (error) {
         console.error('Express interest error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Add more images to existing listing
+router.post('/:id/images', authenticate, upload.array('images', 5), async (req, res) => {
+    try {
+        const listing = await Listing.findById(req.params.id);
+
+        if (!listing) {
+            return res.status(404).json({ message: 'Listing not found' });
+        }
+
+        // Check if user owns the listing
+        if (listing.owner.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized to edit this listing' });
+        }
+
+        // Check if files were uploaded
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: 'No images provided' });
+        }
+
+        // Check total image limit (max 5 images per listing)
+        const currentImageCount = listing.images ? listing.images.length : 0;
+        const newImageCount = req.files.length;
+        
+        if (currentImageCount + newImageCount > 5) {
+            return res.status(400).json({ 
+                message: `Cannot add ${newImageCount} images. Maximum 5 images allowed. Current: ${currentImageCount}` 
+            });
+        }
+
+        // Process uploaded images
+        const newImages = [];
+        for (const file of req.files) {
+            newImages.push({
+                data: file.buffer,
+                contentType: file.mimetype
+            });
+        }
+
+        // Add new images to existing ones
+        if (!listing.images) {
+            listing.images = [];
+        }
+        listing.images.push(...newImages);
+        await listing.save();
+
+        res.json({
+            message: `Successfully added ${newImageCount} image(s)`,
+            totalImages: listing.images ? listing.images.length : 0
+        });
+    } catch (error) {
+        console.error('Add images error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Delete specific image from listing
+router.delete('/:id/images/:imageIndex', authenticate, async (req, res) => {
+    try {
+        const { id, imageIndex } = req.params;
+        
+        const listing = await Listing.findById(id);
+
+        if (!listing) {
+            return res.status(404).json({ message: 'Listing not found' });
+        }
+
+        // Check if user owns the listing
+        if (listing.owner.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized to edit this listing' });
+        }
+
+        // Validate image index
+        const index = parseInt(imageIndex);
+        const imageCount = listing.images ? listing.images.length : 0;
+        if (isNaN(index) || index < 0 || index >= imageCount) {
+            return res.status(400).json({ message: 'Invalid image index' });
+        }
+
+        // Ensure images array exists
+        if (!listing.images || listing.images.length === 0) {
+            return res.status(400).json({ message: 'No images to delete' });
+        }
+
+        // Remove the image
+        listing.images.splice(index, 1);
+        await listing.save();
+
+        res.json({
+            message: 'Image deleted successfully',
+            remainingImages: listing.images ? listing.images.length : 0
+        });
+    } catch (error) {
+        console.error('Delete image error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Debug route - check if listings have images
+router.get('/debug/images', authenticate, async (req, res) => {
+    try {
+        const listings = await Listing.find({}).select('title images');
+        const debug = listings.map(listing => ({
+            id: listing._id,
+            title: listing.title,
+            hasImages: listing.images && listing.images.length > 0,
+            imageCount: listing.images ? listing.images.length : 0,
+            imagesSample: listing.images ? listing.images.slice(0, 1).map(img => ({
+                contentType: img.contentType,
+                dataSize: img.data ? img.data.length : 0
+            })) : []
+        }));
+        
+        res.json({ 
+            total: listings.length,
+            withImages: debug.filter(l => l.hasImages).length,
+            listings: debug 
+        });
+    } catch (error) {
+        console.error('Debug images error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

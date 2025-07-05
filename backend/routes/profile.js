@@ -257,10 +257,80 @@ router.get('/user/:id', authenticate, async (req, res) => {
     }
 });
 
+// Get detailed user profile with listings (for room seekers viewing room providers)
+router.get('/user/:id/detailed', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Validate ObjectId
+        if (!id || id === 'undefined' || id === 'null' || !id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+        
+        const user = await User.findById(id).select('name age city profilePicture profilePictureData instagramHandle bio userType gender');
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Get user's listings if they are a room provider (find-roommate)
+        let listings = [];
+        if (user.userType === 'find-roommate') {
+            const Listing = (await import('../models/Listing.js')).default;
+            const rawListings = await Listing.find({ 
+                owner: id, 
+                status: 'active' 
+            }).select('-interestedUsers'); // Keep images for counting, exclude interested users for privacy
+            
+            listings = rawListings.map(listing => ({
+                id: listing._id,
+                title: listing.title,
+                description: listing.description,
+                roomType: listing.roomType,
+                rent: listing.rent,
+                roomSize: listing.roomSize,
+                city: listing.city,
+                area: listing.area,
+                amenities: listing.amenities,
+                isReplacementListing: listing.isReplacementListing,
+                status: listing.status,
+                views: listing.views,
+                createdAt: listing.createdAt,
+                hasImages: listing.images && listing.images.length > 0,
+                imageCount: listing.images ? listing.images.length : 0
+            }));
+        }
+        
+        res.json({
+            user: {
+                id: user._id,
+                name: user.name,
+                age: user.age,
+                city: user.city,
+                userType: user.userType,
+                gender: user.gender,
+                profilePicture: user.profilePicture,
+                hasProfilePicture: !!user.profilePictureData,
+                instagramHandle: user.instagramHandle,
+                bio: user.bio
+            },
+            listings: listings
+        });
+    } catch (error) {
+        console.error('Get detailed user profile error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Serve profile picture from MongoDB
 router.get('/picture/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
+        
+        // Validate ObjectId
+        if (!userId || userId === 'undefined' || userId === 'null' || !userId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
         
         const user = await User.findById(userId).select('profilePictureData');
         
